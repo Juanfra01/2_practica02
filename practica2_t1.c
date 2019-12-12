@@ -1,27 +1,30 @@
-#include <stdlib.h>
+/* practica 2 tarea 1 con automatizadores*/
+
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <omp.h>
 
-
 #define N 512
 
+
 //Esta función se encarga de reservar memoria para la matriz
-int **crea_matriz()
+unsigned char **crea_matriz()
 {
 	int i;
-	int **matriz;
-	matriz = (int**)malloc(N*sizeof(int*));
+	unsigned char **matriz;
+	matriz = (unsigned char**)malloc(N*sizeof(unsigned char*));
 	for(i=0;i<N;i++){
-		matriz[i] = (int*)malloc(N*sizeof(int));
+		matriz[i] = (unsigned char*)malloc(N*sizeof(unsigned char));
 	}
 	return matriz;
 }
 
 
 // Esta función pasa los valores de un vector a una estructura de matriz
-void inicializar_matriz(int **matriz,int vector_aux[])
+void inicializar_matriz(unsigned char **matriz,unsigned char vector_aux[])
 {
 	int i,j;
 	int incremento=0;
@@ -32,8 +35,6 @@ void inicializar_matriz(int **matriz,int vector_aux[])
 		}
 	}
 }
-
-
 
 //Forma parte del argoritmo de ordenación Merge Sort
 void merge(int vector[],int l,  int m, int r)
@@ -96,65 +97,21 @@ void mergeSort(int vector[],int l, int r)
 }
 
 
-//Esta función pasa los valores enteros de la matriz a char
-void cast_entero(int **matriz,char cadena[]){
-	int posicion=0;
-	int numero=0;
-	
-	for(int i=0;i<N;i++){
-		for(int j=0;j<N;j++){
-			numero = matriz[i][j];
-			cadena[posicion] = (char)numero;
-			posicion++;
-		}
-	}
-}
-
 //Esta función guarda la matriz en un fichero .bin
-void guardar_matriz(char *fileName,char cadena[], FILE *archivo)
+void guardar_matriz(char *fileName,unsigned char **matriz2, FILE *archivo)
 {
-	archivo = fopen("foto_filtrada.raw","wb");
-	int i;
-	for(i=0;i<N*N;i++)
-	{
-		fputc(cadena[i],archivo);
+	archivo = fopen("filtrada_pra2_auto.raw","wb");
+	int i,j;
+	for(i=0;i<N;i++){
+		for(j=0;j<N;j++){
+			fputc(matriz2[i][j],archivo);
+		}
 	}
 	fclose(archivo);
 }
 
 
-void filtrado_sin_automatizadores(int F,int C,int nproces,int **matriz,int **matriz2,int ind_fila[],int ind_colum[],int paumentados,int pdisminuidos,int piguales)
-{
-	int i,j,k,myid,promedio;
-	int elementos_por_proceso = F/nproces;
-	int vector_ordenar[15];
-	
-	
-	#pragma omp parallel num_threads(nproces) shared(matriz,matriz2,F,C,ind_fila,ind_colum,paumentados,pdisminuidos,piguales) private(i,j,k,myid,promedio,elementos_por_proceso)
-	{
-		//np = omp_get_num_threads();
-		myid = omp_get_thread_num();
-		int x = myid*(F/nproces);
-		
-		
-		if(myid == nproces-1){
-			elementos_por_proceso = F -((nproces-1)* elementos_por_proceso);
-		}
-		
-		for(i=0;i<elementos_por_proceso;i++){
-			for(j=0;j<C;j++){
-				
-			}
-		}
-	}//FIN PRAGMA
-	
-		
-}
-
-
-
-
-void liberar_memoria(int **matriz)
+void liberar_memoria(unsigned char **matriz)
 {
 	int i;
 	
@@ -164,15 +121,16 @@ void liberar_memoria(int **matriz)
 	free(matriz);
 }
 
+
 int main(int argc,char *argv[])
 {
 	srand(time(NULL));
 	FILE *archivo,*fp;
-	int **matriz,**matriz2;
-	int vector_aux[N*N];
-	char cadena[N*N];
+	unsigned char **matriz,**matriz2;
+	unsigned char vector_aux[N*N];
 	char caracter;
-	int valor,i,j,k;
+	unsigned char valor;
+	int i,j,k;
 	int incremento = 0;
 	int vector_ordenar[15];
 	int ind_fila[15]={-1,-1,-1,-1,-1,0,0,0,0,0,1,1,1,1,1};
@@ -181,21 +139,21 @@ int main(int argc,char *argv[])
 	int paumentados = 0;
 	int pdisminuidos = 0;
 	int piguales = 0;
-	int nproces;
-	int prueba;
+	int indice = 0;
+	int indice2 = 0;
+	int prueba = 0;
 	
-	if(argc!=3){
-		printf("Error: falta los argumentos correspondientes: nproces lena512x512.raw\n");
+	
+	if(argc!=2){
+		printf("Error: falta el argumento correspondiente lena512x512.raw\n");
 		return 1;
 	}
 	
-	archivo = fopen(argv[2],"rb");
-	nproces = atoi(argv[1]);
+	archivo = fopen(argv[1],"rb");
 	
 	while((caracter = fgetc(archivo)) !=EOF)
 	{
-		valor = (int)caracter;
-		vector_aux[incremento] = valor;
+		vector_aux[incremento] = caracter;
 		//printf(" %d ",valor);	
 		incremento++;
 	}
@@ -204,37 +162,59 @@ int main(int argc,char *argv[])
 	matriz = crea_matriz();
 	matriz2 = crea_matriz();
 	inicializar_matriz(matriz,vector_aux);
+
+	int nproces = 4;
+	int elementos_por_proceso = N/nproces;
+
+	#pragma omp parallel for num_threads(nproces) shared(matriz,matriz2,i,ind_fila,ind_colum) private(k,j,vector_ordenar,promedio) reduction(+:paumentados) reduction(+:pdisminuidos) reduction(+:piguales)
+	for(i=0;i<N;i++){
+		for(j=0;j<N;j++){
+			if(i==0 || i==(N-1) || j==0 || j==1 || j==(N-1) || j==(N-2)){
+					matriz2[i][j] = matriz[i][j];
+			}else{
+				for(k=0;k<15;k++){
+					vector_ordenar[k] = matriz[i+ind_fila[k]][j+ind_colum[k]];
+				}
+				
+				//función de ordenación ascendente 
+				//MEDIANA
+				mergeSort(vector_ordenar,0,14);
+				
+				//PROMEDIO
+				promedio = (vector_ordenar[6] + vector_ordenar[7] + vector_ordenar[8])/3;
+				
+				if(promedio > matriz[i][j]){
+					paumentados++;
+				}else if(promedio < matriz[i][j]){
+					pdisminuidos++;
+				}else{
+					piguales++;
+				}
+				
+				matriz2[i][j] = promedio;
+				
+			}//fin else
+		}
+	}
 	
-	filtrado_sin_automatizadores(N,N,nproces,matriz,matriz2,ind_fila,ind_colum,paumentados,pdisminuidos,piguales);
-	scanf("%d",&prueba);
+	guardar_matriz("matriz.bin",matriz2,archivo);
+	
+	printf("\n Pixeles aumentados: %d ",paumentados);
+	printf("\n Pixeles disminuidos: %d ",pdisminuidos);
+	printf("\n Pixeles iguales: %d \n",piguales);
 	
 	
-	archivo = fopen("foto_filtrada_pra.raw","wb");
-	cast_entero(matriz2,cadena);
-	guardar_matriz("matriz.bin",cadena,archivo);
+	liberar_memoria(matriz);
+	liberar_memoria(matriz2);
 	
 	return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
+Pixeles aumentados:90800
+Pixeles disminuidos: 117279
+Pixeles iguales: 51001
+* */
 
 
 

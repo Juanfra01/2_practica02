@@ -212,6 +212,9 @@ int main(int argc,char *argv[])
 	
 	scanf("%d",&prueba);
 	
+	//aquí las variables globales
+	//antes de esto nada de paralelismo, el paralelismo empieza aquí
+	//aquí hay que poner un omp for schedule(static,elementos_por_prceso) reduction(+:suma)
 	for(i=0;i<N;i++){
 		for(j=0;j<N;j++){
 			if(i==0 || i==(N-1) || j==0 || j==1 || j==(N-1) || j==(N-2)){
