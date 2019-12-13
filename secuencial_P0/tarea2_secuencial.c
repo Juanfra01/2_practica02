@@ -135,7 +135,6 @@ int main(int argc,char *argv[])
 	srand(time(NULL));
 	double norma_euclidea[2];
 	
-	
 	//m = atoi(argv[1]);
 	//alpha = atof(argv[2]);
 	
@@ -143,19 +142,14 @@ int main(int argc,char *argv[])
 	//inicializa_matriz(matriz);
 	inicializa_matriz_comprobacion(matriz);
 	vector = (double*)malloc(N*sizeof(double));
-	vaux = (double*)malloc(N*sizeof(double));
+	vaux = (double*)calloc(N,sizeof(double));
 	inicializa_vector(vector);
 	
 	//imprime_matriz(matriz,N,N);
 	//printf("\n");
-//	printf("\nVector: \n");
+	//printf("\nVector: \n");
 	//imprime_vector(vector);
-	
-	for(i=0;i<N;i++){
-		vaux[i] = 0;
-	}
-	
-	
+
 	for(iter=1; iter<=m; iter++){
 		norma_euclidea[iter%2] = 0;
 		for(i=0;i<N;i++){
@@ -180,18 +174,13 @@ int main(int argc,char *argv[])
 			vector[i] = vaux[i];
 		}
 		
-		
 		if (iter==m) {
 			printf("NORMA FINAL: ");
 		} else {
 			printf("NORMA: ");
 		}
 		printf("%f\n",norma_euclidea[iter%2]);
-		
-		
 	}//FOR iteraciones
-	
-	
 
 	libera_matriz(matriz);
 	free(vector);
@@ -199,39 +188,13 @@ int main(int argc,char *argv[])
 	return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*
+Norma: 1.728359e+01
+Norma: 9.952852e+00
+Norma: 5.415347e-01
+Norma: 3.118459e-01
+Norma final: 5.415347e-01*/
+ 
 
 
 

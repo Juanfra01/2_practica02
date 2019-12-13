@@ -1,6 +1,5 @@
 /* practica 2 tarea 1 con automatizadores*/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -100,7 +99,7 @@ void mergeSort(int vector[],int l, int r)
 //Esta función guarda la matriz en un fichero .bin
 void guardar_matriz(char *fileName,unsigned char **matriz2, FILE *archivo)
 {
-	archivo = fopen("filtrada_pra2_auto.raw","wb");
+	archivo = fopen(fileName,"wb");
 	int i,j;
 	for(i=0;i<N;i++){
 		for(j=0;j<N;j++){
@@ -122,52 +121,17 @@ void liberar_memoria(unsigned char **matriz)
 }
 
 
-int main(int argc,char *argv[])
+void tarea1_con_automatizadores(unsigned char **matriz,unsigned char **matriz2,int ind_fila[],int ind_colum[],int nproces,FILE *archivo)
 {
-	srand(time(NULL));
-	FILE *archivo,*fp;
-	unsigned char **matriz,**matriz2;
-	unsigned char vector_aux[N*N];
-	char caracter;
-	unsigned char valor;
-	int i,j,k;
-	int incremento = 0;
-	int vector_ordenar[15];
-	int ind_fila[15]={-1,-1,-1,-1,-1,0,0,0,0,0,1,1,1,1,1};
-	int ind_colum[15]={-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2};
-	int promedio;
-	int paumentados = 0;
-	int pdisminuidos = 0;
-	int piguales = 0;
-	int indice = 0;
-	int indice2 = 0;
-	int prueba = 0;
-	int nproces;
 	
-	
-	if(argc!=3){
-		printf("Error: falta el argumento correspondiente lena512x512.raw\n");
-		return 1;
-	}
-	
-	nproces = atoi(argv[2]);
-	archivo = fopen(argv[1],"rb");
-	
-	while((caracter = fgetc(archivo)) !=EOF)
-	{
-		vector_aux[incremento] = caracter;
-		//printf(" %d ",valor);	
-		incremento++;
-	}
-	fclose(archivo);
-		
-	matriz = crea_matriz();
-	matriz2 = crea_matriz();
-	inicializar_matriz(matriz,vector_aux);
-
-	//int nproces = 4;
+	int i,j,k,promedio;
+	int paumentados=0;
+	int pdisminuidos=0;
+	int piguales=0;
 	int elementos_por_proceso = N/nproces;
-
+	int vector_ordenar[15];
+	
+	
 	#pragma omp parallel for num_threads(nproces) shared(matriz,matriz2,i,ind_fila,ind_colum) private(k,j,vector_ordenar,promedio) reduction(+:paumentados) reduction(+:pdisminuidos) reduction(+:piguales)
 	for(i=0;i<N;i++){
 		for(j=0;j<N;j++){
@@ -199,11 +163,127 @@ int main(int argc,char *argv[])
 		}
 	}
 	
-	guardar_matriz("matriz.bin",matriz2,archivo);
 	
-	printf("\n Pixeles aumentados: %d ",paumentados);
-	printf("\n Pixeles disminuidos: %d ",pdisminuidos);
-	printf("\n Pixeles iguales: %d \n",piguales);
+	printf("Pixeles aumentados: %d ",paumentados);
+	printf("\nPixeles disminuidos: %d ",pdisminuidos);
+	printf("\nPixeles iguales: %d \n",piguales);
+	
+	guardar_matriz("filtro_con_automatizadores.raw",matriz2,archivo);
+
+}
+
+
+void tarea1_sin_automatizadores(unsigned char **matriz,unsigned char **matriz2,int ind_fila[],int ind_colum[],int nproces,FILE *archivo)
+{
+	int i,j,k,promedio,paumentados,pdisminuidos,piguales,auxmas,auxmenos,auxigual;
+	int limite_inferior,limite_superior,myid;
+	int filas_por_proceso = N/nproces;
+	int vector_ordenar[15];
+	
+	
+	#pragma omp parallel num_threads(nproces) shared(matriz,matriz2,ind_fila,ind_colum,nproces,filas_por_proceso) private(i,j,k,vector_ordenar,promedio,myid,limite_inferior,limite_superior,auxmas,auxmenos,auxigual)
+	{
+		myid = omp_get_thread_num();
+		limite_inferior = myid*filas_por_proceso;
+		limite_superior = (myid == nproces-1) ? N : (myid+1)*filas_por_proceso;
+		auxmas = 0;
+		auxmenos = 0;
+		auxigual = 0;
+		
+		printf("\nSoy el proceso %d de %d procesos  LI %d   LS %d \n",myid,nproces,limite_inferior,limite_superior);
+		
+		for(i=limite_inferior;i<limite_superior;i++){
+			for(j=0;j<N;j++){
+				if(i==0 || i==(N-1) || j==0 || j==1 || j==(N-1) || j==(N-2)){
+						matriz2[i][j] = matriz[i][j];
+				}else{
+					for(k=0;k<15;k++){
+						vector_ordenar[k] = matriz[i+ind_fila[k]][j+ind_colum[k]];
+					}
+					
+					//función de ordenación ascendente 
+					//MEDIANA
+					mergeSort(vector_ordenar,0,14);
+					
+					//PROMEDIO
+					promedio = (vector_ordenar[6] + vector_ordenar[7] + vector_ordenar[8])/3;
+					
+					if(promedio > matriz[i][j]){
+						auxmas++;
+					}else if(promedio < matriz[i][j]){
+						auxmenos++;
+					}else{
+						auxigual++;
+					}
+					
+					matriz2[i][j] = promedio;
+				}//fin else
+			}
+			
+			#pragma omp single
+			{
+				paumentados = 0;
+				pdisminuidos = 0;
+				piguales = 0;
+			}
+		}
+
+		#pragma omp critical
+		{
+			paumentados += auxmas;
+			pdisminuidos += auxmenos;
+			piguales += auxigual;
+		}
+		
+	}//Fin pragma
+	
+	printf("Pixeles aumentados: %d ",paumentados);
+	printf("\nPixeles disminuidos: %d ",pdisminuidos);
+	printf("\nPixeles iguales: %d \n",piguales);
+	
+	guardar_matriz("filtro_sin_automatizadores.raw",matriz2,archivo);
+}
+
+
+
+int main(int argc,char *argv[])
+{
+	srand(time(NULL));
+	FILE *archivo,*fp;
+	unsigned char **matriz,**matriz2;
+	unsigned char vector_aux[N*N];
+	char caracter;
+	unsigned char valor;
+	int i,j,k;
+	int incremento = 0;
+	int ind_fila[15]={-1,-1,-1,-1,-1,0,0,0,0,0,1,1,1,1,1};
+	int ind_colum[15]={-2,-1,0,1,2,-2,-1,0,1,2,-2,-1,0,1,2};
+	int nproces;
+	
+	if(argc!=3){
+		printf("Error: falta el argumento correspondiente lena512x512.raw nproces\n");
+		return 1;
+	}
+	
+	archivo = fopen(argv[1],"rb");
+	nproces = atoi(argv[2]);
+
+	
+	while((caracter = fgetc(archivo)) !=EOF)
+	{
+		vector_aux[incremento] = caracter;
+		//printf(" %d ",valor);	
+		incremento++;
+	}
+	fclose(archivo);
+		
+	matriz = crea_matriz();
+	matriz2 = crea_matriz();
+	inicializar_matriz(matriz,vector_aux);
+
+	
+//	tarea1_con_automatizadores(matriz,matriz2,ind_fila,ind_colum,nproces,archivo);
+	tarea1_sin_automatizadores(matriz,matriz2,ind_fila,ind_colum,nproces,archivo);
 	
 	
 	liberar_memoria(matriz);
