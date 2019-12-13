@@ -142,13 +142,15 @@ int main(int argc,char *argv[])
 	int indice = 0;
 	int indice2 = 0;
 	int prueba = 0;
+	int nproces;
 	
 	
-	if(argc!=2){
+	if(argc!=3){
 		printf("Error: falta el argumento correspondiente lena512x512.raw\n");
 		return 1;
 	}
 	
+	nproces = atoi(argv[2]);
 	archivo = fopen(argv[1],"rb");
 	
 	while((caracter = fgetc(archivo)) !=EOF)
@@ -163,7 +165,7 @@ int main(int argc,char *argv[])
 	matriz2 = crea_matriz();
 	inicializar_matriz(matriz,vector_aux);
 
-	int nproces = 4;
+	//int nproces = 4;
 	int elementos_por_proceso = N/nproces;
 
 	#pragma omp parallel for num_threads(nproces) shared(matriz,matriz2,i,ind_fila,ind_colum) private(k,j,vector_ordenar,promedio) reduction(+:paumentados) reduction(+:pdisminuidos) reduction(+:piguales)
