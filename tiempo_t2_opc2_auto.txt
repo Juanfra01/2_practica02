@@ -1,2 +1,2 @@
 
-El tiempo tarea 2 opcion 2 automatizadores es de: 0.033549 con 6 procesos
+El tiempo tarea 2 opcion 2 automatizadores es de: 0.038581 seg con 7 procesos

@@ -1,0 +1,5 @@
+Pixeles aumentados: 90800 
+Pixeles disminuidos: 117279 
+Pixeles iguales: 51001 
+
+El tiempo tarea 1 opcion 1 con automatizadores es de: 0.280335 seg con 1 procesos

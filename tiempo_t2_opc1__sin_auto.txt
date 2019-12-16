@@ -1,2 +1,1 @@
-
-El tiempo tarea 2 opcion 1 sin automatizadores es de: 0.020971 con 6 procesos
+El tiempo tarea 2 opcion 1 sin automatizadores es de: 0.032488 seg con 8 procesos
